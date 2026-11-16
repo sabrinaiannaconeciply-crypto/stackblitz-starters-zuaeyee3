@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 
-const SUPABASE_URL = "https://supabase.co"; 
+const SUPABASE_URL = "bqyvorsmkbmvqxraoncq"; 
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZiZm5lZmp3aWJuanllZXZia2d0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4Mzc0OTEsImV4cCI6MjExMDQxMzQ5MX0.qnhxye74NVHqSUDf4uG1U_ar8Rz86Y_Sn8ec8vg";
 
 interface Produit {
