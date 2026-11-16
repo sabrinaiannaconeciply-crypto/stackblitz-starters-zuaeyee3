@@ -58,46 +58,38 @@ export default function Home() {
 
   const gererPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files && files.length > 0) {
-      const f = files[0];
-      setFichierPhoto(f);
-      setImagePreview(URL.createObjectURL(f));
-    }
+    if (!files || files.length === 0) return;
+    const f = files.item(0)!;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const maxLargeur = 600;
+        const echelle = Math.min(1, maxLargeur / img.width);
+        canvas.width = img.width * echelle;
+        canvas.height = img.height * echelle;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const imageCompressee = canvas.toDataURL("image/jpeg", 0.7);
+        setImagePreview(imageCompressee);
+        setFichierPhoto(f);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(f);
   };
 
   const ajouterProduit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nom || !createur || !prix) return;
     if (produits.length >= 15) {
-      alert("Limite gratuite atteinte (15 produits max) !");
+      alert("Limite gratuite atteinte (15 produits max) ! Passez à l'offre Pro à 10€/mois.");
       return;
     }
 
     setEnvoiEnCours(true);
-    let urlImageFinale = "";
-
     try {
-      if (fichierPhoto) {
-        const nomFichier = `photo_${Date.now()}.jpg`;
-        const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/photos/${nomFichier}`, {
-          method: "POST",
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-            "Content-Type": fichierPhoto.type || "image/jpeg",
-          },
-          body: fichierPhoto,
-        });
-        if (uploadRes.ok) {
-          urlImageFinale = `${SUPABASE_URL}/storage/v1/object/public/photos/${nomFichier}`;
-        } else {
-          const errUpload = await uploadRes.text();
-          alert(`Erreur envoi photo (${uploadRes.status}) : ${errUpload}`);
-          setEnvoiEnCours(false);
-          return;
-        }
-      }
-
       const saveRes = await fetch(`${SUPABASE_URL}/rest/v1/produits`, {
         method: "POST",
         headers: {
@@ -111,7 +103,7 @@ export default function Home() {
           createur,
           prix: Number(prix),
           categorie,
-          image: urlImageFinale,
+          image: imagePreview || "",
         }),
       });
 
@@ -128,15 +120,15 @@ export default function Home() {
         setImagePreview(null);
       } else {
         const errText = await saveRes.text();
-        alert(`Erreur base de données (${saveRes.status}) : ${errText}`);
+        alert(`Erreur table produits (${saveRes.status}) : ${errText}`);
       }
     } catch (err) {
       alert(`Erreur connexion : ${String(err)}`);
     } finally {
       setEnvoiEnCours(false);
     }
+  
   };
-
   const supprimerProduit = async (id: number) => {
     await fetch(`${SUPABASE_URL}/rest/v1/produits?id=eq.${id}`, {
       method: "DELETE",
