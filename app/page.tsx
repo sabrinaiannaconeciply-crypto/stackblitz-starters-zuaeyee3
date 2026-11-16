@@ -75,7 +75,7 @@ export default function Home() {
 
   const articleLive = produits.find((p) => p.id === produitEnDirect) || produits.at(0);
 
- return (
+  return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
       <header className="bg-black text-white p-5 flex flex-wrap justify-between items-center gap-3">
         <div>
@@ -113,7 +113,7 @@ export default function Home() {
                 <span className="bg-black/70 text-xs px-2.5 py-1 rounded">👁️ 48 spectateurs</span>
               </div>
               <div className="relative z-10 bg-black/75 p-3 rounded-lg backdrop-blur-sm">
-                <p className="text-xs text-emerald-400 font-semibold">Article présenté à l'écran :</p>
+                <p className="text-xs text-emerald-400 font-semibold">Article présenté en direct :</p>
                 <p className="font-bold text-base">{articleLive.nom} — {articleLive.prix} €</p>
               </div>
             </div>
@@ -169,7 +169,7 @@ export default function Home() {
       <main className="max-w-5xl mx-auto p-6 grid md:grid-cols-3 gap-8">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 h-fit">
           <h2 className="text-lg font-bold mb-1">Ajouter une création</h2>
-          <p className="text-xs text-gray-500 mb-4">Gratuit jusqu'à 15 articles (5% par vente)</p>
+          <p className="text-xs text-gray-500 mb-4">Gratuit pour 15 articles max (5% par vente)</p>
 
           <form onSubmit={ajouterProduit} className="space-y-3">
             <div>
@@ -241,10 +241,10 @@ export default function Home() {
           </form>
         </div>
 
-
-
         <div className="md:col-span-2">
           <h2 className="text-xl font-bold mb-4">Catalogue des créateurs</h2>
+
+
 
           <div className="grid sm:grid-cols-2 gap-4">
             {produits.map((item) => (
