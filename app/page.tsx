@@ -1,36 +1,18 @@
 "use client";
 import React, { useState } from 'react';
 
+interface Produit {
+  id: number;
+  nom: string;
+  createur: string;
+  prix: number;
+  categorie: string;
+  image: string;
+  tailles: string[];
+}
+
 export default function Home() {
-  const [produits, setProduits] = useState([
-    {
-      id: 1,
-      nom: "Bougie Vanille & Ambre",
-      createur: "Atelier Clara",
-      prix: 18,
-      categorie: "Bougies",
-      image: "https://unsplash.com",
-      tailles: ["Unique"],
-    },
-    {
-      id: 2,
-      nom: "Sweat Oversize Brodé",
-      createur: "Léo Création",
-      prix: 45,
-      categorie: "Mode",
-      image: "https://unsplash.com",
-      tailles: ["S", "M", "L", "XL"],
-    },
-    {
-      id: 3,
-      nom: "Collier Perles d'Eau",
-      createur: "Bijoux Mina",
-      prix: 32,
-      categorie: "Bijoux",
-      image: "https://unsplash.com",
-      tailles: ["Unique"],
-    },
-  ]);
+  const [produits, setProduits] = useState<Produit[]>([]);
 
   const [nom, setNom] = useState("");
   const [createur, setCreateur] = useState("");
@@ -38,8 +20,9 @@ export default function Home() {
   const [categorie, setCategorie] = useState("Mode");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  const [enLive, setEnLive] = useState(true);
-  const [produitEnDirect, setProduitEnDirect] = useState(1);
+  const [enLive, setEnLive] = useState(false);
+  const [youtubeId, setYoutubeId] = useState("");
+  const [produitEnDirect, setProduitEnDirect] = useState<number | null>(null);
   const [tailleChoisie, setTailleChoisie] = useState("M");
 
   const gererPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,23 +40,32 @@ export default function Home() {
       alert("Limite gratuite atteinte (15 produits max) ! Passez à l'offre Pro à 10€/mois.");
       return;
     }
-    const nouveau = {
+    const nouveau: Produit = {
       id: Date.now(),
       nom,
       createur,
       prix: Number(prix),
       categorie,
-      image: imagePreview || "https://unsplash.com",
+      image: imagePreview || "",
       tailles: categorie === "Mode" ? ["S", "M", "L", "XL"] : ["Unique"],
     };
     setProduits([nouveau, ...produits]);
     setProduitEnDirect(nouveau.id);
+    setEnLive(true);
     setNom("");
     setPrix("");
     setImagePreview(null);
   };
 
-  const articleLive = produits.find((p) => p.id === produitEnDirect) || produits.at(0);
+  const supprimerProduit = (id: number) => {
+    const misAJour = produits.filter((p) => p.id !== id);
+    setProduits(misAJour);
+    if (produitEnDirect === id) {
+      setProduitEnDirect(misAJour.length > 0 ? misAJour[0].id : null);
+    }
+  };
+
+  const articleLive = produits.find((p) => p.id === produitEnDirect) || produits[0];
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
@@ -83,14 +75,16 @@ export default function Home() {
           <p className="text-xs text-gray-400">Vente & Live Shopping des jeunes créateurs • 0€ pour démarrer</p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setEnLive(!enLive)}
-            className={`text-xs font-bold px-3 py-1.5 rounded-full transition ${
-              enLive ? "bg-red-600 text-white animate-pulse" : "bg-gray-700 text-gray-200"
-            }`}
-          >
-            {enLive ? "● LIVE EN COURS (Masquer)" : "○ Lancer un Live"}
-          </button>
+          {produits.length > 0 && (
+            <button
+              onClick={() => setEnLive(!enLive)}
+              className={`text-xs font-bold px-3 py-1.5 rounded-full transition ${
+                enLive ? "bg-red-600 text-white animate-pulse" : "bg-gray-700 text-gray-200"
+              }`}
+            >
+              {enLive ? "● LIVE EN COURS (Masquer)" : "○ Ouvrir le Live"}
+            </button>
+          )}
           <span className="bg-emerald-500 text-black text-xs font-bold px-3 py-1.5 rounded-full">
             Gratuit : {produits.length} / 15 produits
           </span>
@@ -100,22 +94,48 @@ export default function Home() {
       {enLive && articleLive && (
         <section className="bg-zinc-900 text-white border-b border-zinc-800">
           <div className="max-w-5xl mx-auto p-6 grid md:grid-cols-2 gap-6 items-center">
-            <div className="relative rounded-xl overflow-hidden bg-black aspect-video border border-zinc-700 flex flex-col justify-between p-4">
-              <img
-                src={articleLive.image}
-                alt={articleLive.nom}
-                className="absolute inset-0 w-full h-full object-cover opacity-55"
+            <div>
+              <div className="relative rounded-xl overflow-hidden bg-black aspect-video border border-zinc-700 flex flex-col justify-between p-4">
+                {youtubeId ? (
+                  <iframe
+                    className="absolute inset-0 w-full h-full"
+                    src={`https://youtube.com{youtubeId}?autoplay=1`}
+                    title="Live Créateur"
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                  />
+                ) : (
+                  <>
+                    {articleLive.image ? (
+                      <img
+                        src={articleLive.image}
+                        alt={articleLive.nom}
+                        className="absolute inset-0 w-full h-full object-cover opacity-70"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-zinc-500 text-sm">
+                        Aperçu produit en direct
+                      </div>
+                    )}
+                    <div className="relative z-10 flex justify-between items-center">
+                      <span className="bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded">
+                        EN DIRECT • {articleLive.createur}
+                      </span>
+                    </div>
+                    <div className="relative z-10 bg-black/75 p-3 rounded-lg backdrop-blur-sm">
+                      <p className="text-xs text-emerald-400 font-semibold">Article présenté en direct :</p>
+                      <p className="font-bold text-base">{articleLive.nom} — {articleLive.prix} €</p>
+                    </div>
+                  </>
+                )}
+              </div>
+              <input
+                type="text"
+                placeholder="Optionnel : collez l'ID vidéo YouTube Live (ex: dQw4w9WgXcQ)"
+                value={youtubeId}
+                onChange={(e) => setYoutubeId(e.target.value)}
+                className="mt-2 w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-gray-400"
               />
-              <div className="relative z-10 flex justify-between items-center">
-                <span className="bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded">
-                  EN DIRECT • {articleLive.createur}
-                </span>
-                <span className="bg-black/70 text-xs px-2.5 py-1 rounded">👁️ 48 spectateurs</span>
-              </div>
-              <div className="relative z-10 bg-black/75 p-3 rounded-lg backdrop-blur-sm">
-                <p className="text-xs text-emerald-400 font-semibold">Article présenté en direct :</p>
-                <p className="font-bold text-base">{articleLive.nom} — {articleLive.prix} €</p>
-              </div>
             </div>
 
             <div className="bg-zinc-800 p-5 rounded-xl border border-zinc-700">
@@ -179,6 +199,7 @@ export default function Home() {
                 accept="image/*"
                 onChange={gererPhoto}
                 className="w-full text-xs border rounded-lg p-1.5 bg-gray-50"
+                required
               />
               {imagePreview && (
                 <img src={imagePreview} alt="Aperçu" className="mt-2 h-24 w-full object-cover rounded-lg" />
@@ -199,7 +220,7 @@ export default function Home() {
               <label className="block text-xs font-semibold mb-1">Nom du produit</label>
               <input
                 type="text"
-                placeholder="Ex: Pull tricoté main"
+                placeholder="Ex: Cape chocolat"
                 value={nom}
                 onChange={(e) => setNom(e.target.value)}
                 className="w-full border rounded-lg p-2 text-sm"
@@ -211,7 +232,7 @@ export default function Home() {
                 <label className="block text-xs font-semibold mb-1">Prix (€)</label>
                 <input
                   type="number"
-                  placeholder="29"
+                  placeholder="30"
                   value={prix}
                   onChange={(e) => setPrix(e.target.value)}
                   className="w-full border rounded-lg p-2 text-sm"
@@ -219,7 +240,7 @@ export default function Home() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold mb-1">Catégorie</label>
+              <label className="block text-xs font-semibold mb-1">Catégorie</label>
                 <select
                   value={categorie}
                   onChange={(e) => setCategorie(e.target.value)}
@@ -244,49 +265,64 @@ export default function Home() {
         <div className="md:col-span-2">
           <h2 className="text-xl font-bold mb-4">Catalogue des créateurs</h2>
 
-
-
-          <div className="grid sm:grid-cols-2 gap-4">
-            {produits.map((item) => (
-              <div key={item.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col justify-between">
-                <div>
-                  <img src={item.image} alt={item.nom} className="w-full h-40 object-cover" />
-                  <div className="p-4 pb-0">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[11px] uppercase tracking-wider bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-semibold">
-                        {item.categorie}
-                      </span>
-                      <button
-                        onClick={() => {
-                          setProduitEnDirect(item.id);
-                          setEnLive(true);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        className="text-[11px] text-red-600 font-bold hover:underline"
-                      >
-                        ▶ Présenter en Live
-                      </button>
+          {produits.length === 0 ? (
+            <div className="bg-white border border-dashed border-gray-300 rounded-xl p-10 text-center text-gray-500">
+              <p className="font-semibold text-gray-700">Aucun produit publié pour le moment</p>
+              <p className="text-xs mt-1">Utilisez le formulaire à gauche pour publier votre première création avec photo !</p>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {produits.map((item) => (
+                <div key={item.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col justify-between">
+                  <div>
+                    {item.image && (
+                      <img src={item.image} alt={item.nom} className="w-full h-44 object-cover" />
+                    )}
+                    <div className="p-4 pb-0">
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-[11px] uppercase tracking-wider bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-semibold">
+                          {item.categorie}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              setProduitEnDirect(item.id);
+                              setEnLive(true);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="text-[11px] text-red-600 font-bold hover:underline"
+                          >
+                            ▶ Live
+                          </button>
+                          <button
+                            onClick={() => supprimerProduit(item.id)}
+                            className="text-[11px] text-gray-400 hover:text-red-600 font-semibold"
+                          >
+                            ✕ Supprimer
+                          </button>
+                        </div>
+                      </div>
+                      <h3 className="font-bold text-lg mt-2">{item.nom}</h3>
+                      <p className="text-xs text-gray-500">Par <span className="font-medium text-gray-800">{item.createur}</span></p>
                     </div>
-                    <h3 className="font-bold text-lg mt-2">{item.nom}</h3>
-                    <p className="text-xs text-gray-500">Par <span className="font-medium text-gray-800">{item.createur}</span></p>
+                  </div>
+                  <div className="p-4 pt-3 mt-3 border-t flex justify-between items-center">
+                    <span className="text-lg font-extrabold">{item.prix} €</span>
+                    <button
+                      onClick={() =>
+                        alert(
+                          `Simulation d'achat : ${item.nom} (${item.prix}€)\n\nPart créateur : ${(item.prix * 0.93).toFixed(2)}€\nVotre commission (5%) : ${(item.prix * 0.05).toFixed(2)}€`
+                        )
+                      }
+                      className="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-emerald-700"
+                    >
+                      Acheter
+                    </button>
                   </div>
                 </div>
-                <div className="p-4 pt-3 mt-3 border-t flex justify-between items-center">
-                  <span className="text-lg font-extrabold">{item.prix} €</span>
-                  <button
-                    onClick={() =>
-                      alert(
-                        `Simulation d'achat : ${item.nom} (${item.prix}€)\n\nPart créateur : ${(item.prix * 0.93).toFixed(2)}€\nVotre commission (5%) : ${(item.prix * 0.05).toFixed(2)}€`
-                      )
-                    }
-                    className="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-emerald-700"
-                  >
-                    Acheter
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>
