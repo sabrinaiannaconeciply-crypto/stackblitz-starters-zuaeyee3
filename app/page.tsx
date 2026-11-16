@@ -27,24 +27,18 @@ export default function Home() {
   const [enLive, setEnLive] = useState(true);
   const [produitEnDirect, setProduitEnDirect] = useState<number | null>(null);
   const [tailleChoisie, setTailleChoisie] = useState("M");
-
-  const chargerProduits = async () => {
+  const chargerProduits = () => {
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/produits?select=*&order=id.desc`, {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-        },
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const sauvegarde = localStorage.getItem("crea_live_produits");
+      if (sauvegarde) {
+        const data = JSON.parse(sauvegarde);
         setProduits(data);
         if (data.length > 0 && !produitEnDirect) {
           setProduitEnDirect(data[0].id);
         }
       }
     } catch (err) {
-      console.error("Erreur chargement:", err);
+      console.error(err);
     } finally {
       setChargement(false);
     }
@@ -57,26 +51,26 @@ export default function Home() {
   const gererPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    const f = files.item(0)!;
+    const f = files[0];
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const maxLargeur = 900;
+        const maxLargeur = 700;
         const echelle = Math.min(1, maxLargeur / img.width);
         canvas.width = img.width * echelle;
         canvas.height = img.height * echelle;
         const ctx = canvas.getContext("2d");
         ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-        setImagePreview(canvas.toDataURL("image/jpeg", 0.8));
+        setImagePreview(canvas.toDataURL("image/jpeg", 0.75));
       };
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(f);
   };
 
-  const ajouterProduit = async (e: React.FormEvent) => {
+  const ajouterProduit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nom || !createur || !prix) return;
     if (produits.length >= 15) {
@@ -84,59 +78,32 @@ export default function Home() {
       return;
     }
 
-    setEnvoiEnCours(true);
-    try {
-      const saveRes = await fetch(`${SUPABASE_URL}/rest/v1/produits`, {
-        method: "POST",
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          "Content-Type": "application/json",
-          Prefer: "return=representation",
-        },
-        body: JSON.stringify({
-          nom,
-          createur,
-          prix: Number(prix),
-          categorie,
-          image: imagePreview || "",
-        }),
-      });
+    const nouveau: Produit = {
+      id: Date.now(),
+      nom,
+      createur,
+      prix: Number(prix),
+      categorie,
+      image: imagePreview || "",
+    };
 
-      if (saveRes.ok) {
-        const [cree] = await saveRes.json();
-        await chargerProduits();
-        if (cree) {
-          setProduitEnDirect(cree.id);
-          setEnLive(true);
-        }
-        setNom("");
-        setPrix("");
-        setImagePreview(null);
-      } else {
-        const errText = await saveRes.text();
-        alert(`Erreur Supabase (${saveRes.status}) : ${errText}`);
-      }
-    } catch (err) {
-      alert(`Erreur connexion : ${String(err)}`);
-    } finally {
-      setEnvoiEnCours(false);
-    }
+    const nouvelleListe = [nouveau, ...produits];
+    setProduits(nouvelleListe);
+    localStorage.setItem("crea_live_produits", JSON.stringify(nouvelleListe));
+    setProduitEnDirect(nouveau.id);
+    setEnLive(true);
+    setNom("");
+    setPrix("");
+    setImagePreview(null);
   };
 
-  const supprimerProduit = async (id: number) => {
-    try {
-      await fetch(`${SUPABASE_URL}/rest/v1/produits?id=eq.${id}`, {
-        method: "DELETE",
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-        },
-      });
-      await chargerProduits();
-    } catch (err) {
-      console.error("Erreur suppression:", err);
-    }
+  const supprimerProduit = (id: number) => {
+    const nouvelleListe = produits.filter((p) => p.id !== id);
+    setProduits(nouvelleListe);
+    localStorage.setItem("crea_live_produits", JSON.stringify(nouvelleListe));
+  };
+
+    
   };
 
   const articleLive = produits.find((p) => p.id === produitEnDirect) || produits[0];
@@ -382,4 +349,4 @@ export default function Home() {
           </main>
         </div>
       );
-    }
+    
