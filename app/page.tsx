@@ -1,9 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 
-const SUPABASE_URL = "https://fbfnefjwibnjyeevbkgt.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxiZmllZmppd2JuanllZXZiYmd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4Mzc2OTEsImV4cCI6MjExMDQxMzY5MX0.qnhxy074NVHqSUDF4UGx1U__mrzRZ8GYy_5n4c8cvVg";
-
+const SUPABASE_URL = "https://supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzZDxBhYmFzZSIsInJlZiI6ImZiZm5lZmp3aWJuanllZXZia2d0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4Mzc0OTEsImV4cCI6MjExMDQxMzQ5MX0.qnhxye74NVHqSUDf4uG1U_ar8Rz86Y_Sn8ec8vg";
 
 interface Produit {
   id: number;
@@ -31,16 +30,13 @@ export default function Home() {
   const [produitEnDirect, setProduitEnDirect] = useState<number | null>(null);
   const [tailleChoisie, setTailleChoisie] = useState("M");
 
-  const headersSupabase = {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
-    "Content-Type": "application/json",
-  };
-
   const chargerProduits = async () => {
     try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/produits?select=*&order=created_at.desc`, {
-        headers: headersSupabase,
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/produits?select=*&order=id.desc`, {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+        },
       });
       if (res.ok) {
         const data = await res.json();
@@ -50,7 +46,7 @@ export default function Home() {
         }
       }
     } catch (err) {
-      console.error("Erreur chargement :", err);
+      console.error(err);
     } finally {
       setChargement(false);
     }
@@ -63,9 +59,9 @@ export default function Home() {
   const gererPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      const file = files.item(0)!;
-      setFichierPhoto(file);
-      setImagePreview(URL.createObjectURL(file));
+      const f = files[0];
+      setFichierPhoto(f);
+      setImagePreview(URL.createObjectURL(f));
     }
   };
 
@@ -73,7 +69,7 @@ export default function Home() {
     e.preventDefault();
     if (!nom || !createur || !prix) return;
     if (produits.length >= 15) {
-      alert("Limite gratuite atteinte (15 produits max) ! Passez à l'offre Pro à 10€/mois.");
+      alert("Limite gratuite atteinte (15 produits max) !");
       return;
     }
 
@@ -139,14 +135,15 @@ export default function Home() {
     } finally {
       setEnvoiEnCours(false);
     }
-
-    }
   };
 
   const supprimerProduit = async (id: number) => {
     await fetch(`${SUPABASE_URL}/rest/v1/produits?id=eq.${id}`, {
       method: "DELETE",
-      headers: headersSupabase,
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
     });
     const misAJour = produits.filter((p) => p.id !== id);
     setProduits(misAJour);
@@ -156,7 +153,7 @@ export default function Home() {
   };
 
   const articleLive = produits.find((p) => p.id === produitEnDirect) || produits[0];
-  const taillesArticle = articleLive?.categorie === "Mode" ? ["S", "M", "L", "XL"] : ["Unique"];
+  const taillesDisponibles = articleLive?.categorie === "Mode" ? ["S", "M", "L", "XL"] : ["Unique"];
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
@@ -239,7 +236,7 @@ export default function Home() {
               <div className="mb-4">
                 <p className="text-xs text-gray-400 mb-1.5">Choisissez votre taille :</p>
                 <div className="flex gap-2">
-                  {taillesArticle.map((t) => (
+                  {taillesDisponibles.map((t) => (
                     <button
                       key={t}
                       type="button"
@@ -261,168 +258,168 @@ export default function Home() {
                   <span className="text-xs text-gray-400 block">Prix Live</span>
                   <span className="text-2xl font-extrabold text-white">{articleLive.prix} €</span>
                 </div>
-               
-
-
-<button
+                <button
                   onClick={() =>
                     alert(
                       `Commande Live enregistrée !\nArticle : ${articleLive.nom} (Taille : ${tailleChoisie})\nTotal : ${articleLive.prix}€\n\nVotre commission (5%) : ${(articleLive.prix * 0.05).toFixed(2)}€`
-                    )
-                  }
-                  className="bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold px-5 py-3 rounded-lg text-sm transition"
-                >
-                  ⚡ Bloquer & Payer ({articleLive.prix}€)
-                </button>
+                      )
+                    }
+                    className="bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold px-5 py-3 rounded-lg text-sm transition"
+                  >
+                    ⚡ Bloquer & Payer ({articleLive.prix}€)
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-      )}
-
-      <main className="max-w-5xl mx-auto p-6 grid md:grid-cols-3 gap-8">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 h-fit">
-          <h2 className="text-lg font-bold mb-1">Ajouter une création</h2>
-          <p className="text-xs text-gray-500 mb-4">Gratuit pour 15 articles max (5% par vente)</p>
-
-          <form onSubmit={ajouterProduit} className="space-y-3">
-            <div>
-              <label className="block text-xs font-semibold mb-1">Photo du produit</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={gererPhoto}
-                className="w-full text-xs border rounded-lg p-1.5 bg-gray-50"
-                required
-              />
-              {imagePreview && (
-                <img src={imagePreview} alt="Aperçu" className="mt-2 h-24 w-full object-cover rounded-lg" />
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-semibold mb-1">Votre marque / créateur</label>
-              <input
-                type="text"
-                placeholder="Ex: Atelier Sophie"
-                value={createur}
-                onChange={(e) => setCreateur(e.target.value)}
-                className="w-full border rounded-lg p-2 text-sm"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold mb-1">Nom du produit</label>
-              <input
-                type="text"
-                placeholder="Ex: Cape chocolat"
-                value={nom}
-                onChange={(e) => setNom(e.target.value)}
-                className="w-full border rounded-lg p-2 text-sm"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
+          </section>
+        )}
+  
+        <main className="max-w-5xl mx-auto p-6 grid md:grid-cols-3 gap-8">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 h-fit">
+            <h2 className="text-lg font-bold mb-1">Ajouter une création</h2>
+            <p className="text-xs text-gray-500 mb-4">Gratuit pour 15 articles max (5% par vente)</p>
+  
+            <form onSubmit={ajouterProduit} className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold mb-1">Prix (€)</label>
+                <label className="block text-xs font-semibold mb-1">Photo du produit</label>
                 <input
-                  type="number"
-                  placeholder="30"
-                  value={prix}
-                  onChange={(e) => setPrix(e.target.value)}
+                  type="file"
+                  accept="image/*"
+                  onChange={gererPhoto}
+                  className="w-full text-xs border rounded-lg p-1.5 bg-gray-50"
+                  required
+                />
+                {imagePreview && (
+                  <img src={imagePreview} alt="Aperçu" className="mt-2 h-24 w-full object-cover rounded-lg" />
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold mb-1">Votre marque / créateur</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Atelier Sophie"
+                  value={createur}
+                  onChange={(e) => setCreateur(e.target.value)}
                   className="w-full border rounded-lg p-2 text-sm"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold mb-1">Catégorie</label>
-                <select
-                  value={categorie}
-                  onChange={(e) => setCategorie(e.target.value)}
+                <label className="block text-xs font-semibold mb-1">Nom du produit</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Cape chocolat"
+                  value={nom}
+                  onChange={(e) => setNom(e.target.value)}
                   className="w-full border rounded-lg p-2 text-sm"
-                >
-                  <option>Mode</option>
-                  <option>Bougies</option>
-                  <option>Bijoux</option>
-                  <option>Déco</option>
-                </select>
+                  required
+                />
               </div>
-            </div>
-            <button
-              type="submit"
-              disabled={envoiEnCours}
-              className="w-full bg-black text-white font-semibold py-2.5 rounded-lg hover:bg-gray-800 transition text-sm disabled:opacity-50"
-            >
-              {envoiEnCours ? "Enregistrement en cours..." : "+ Publier avec photo"}
-            </button>
-          </form>
-        </div>
-
-        <div className="md:col-span-2">
-          <h2 className="text-xl font-bold mb-4">Catalogue des créateurs</h2>
-
-          {chargement ? (
-            <p className="text-sm text-gray-500">Chargement du catalogue...</p>
-          ) : produits.length === 0 ? (
-            <div className="bg-white border border-dashed border-gray-300 rounded-xl p-10 text-center text-gray-500">
-              <p className="font-semibold text-gray-700">Aucun produit publié pour le moment</p>
-              <p className="text-xs mt-1">Utilisez le formulaire à gauche pour publier votre première création avec photo !</p>
-            </div>
-          ) : (
-            <div className="grid sm:grid-cols-2 gap-4">
-              {produits.map((item) => (
-                <div key={item.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col justify-between">
-                  <div>
-                    {item.image && (
-                      <img src={item.image} alt={item.nom} className="w-full h-44 object-cover" />
-                    )}
-                    <div className="p-4 pb-0">
-                      <div className="flex justify-between items-center gap-2">
-                        <span className="text-[11px] uppercase tracking-wider bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-semibold">
-                          {item.categorie}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              setProduitEnDirect(item.id);
-                              setEnLive(true);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            className="text-[11px] text-red-600 font-bold hover:underline"
-                          >
-                            ▶ Live
-                          </button>
-                          <button
-                            onClick={() => supprimerProduit(item.id)}
-                            className="text-[11px] text-gray-400 hover:text-red-600 font-semibold"
-                          >
-                            ✕ Supprimer
-                          </button>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Prix (€)</label>
+                  <input
+                    type="number"
+                    placeholder="30"
+                    value={prix}
+                    onChange={(e) => setPrix(e.target.value)}
+                    className="w-full border rounded-lg p-2 text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold mb-1">Catégorie</label>
+                  <select
+                    value={categorie}
+                    onChange={(e) => setCategorie(e.target.value)}
+                    className="w-full border rounded-lg p-2 text-sm"
+                  >
+                    <option>Mode</option>
+                    <option>Bougies</option>
+                    <option>Bijoux</option>
+                    <option>Déco</option>
+                  </select>
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={envoiEnCours}
+                className="w-full bg-black text-white font-semibold py-2.5 rounded-lg hover:bg-gray-800 transition text-sm disabled:opacity-50"
+              >
+                {envoiEnCours ? "Enregistrement en cours..." : "+ Publier avec photo"}
+              </button>
+            </form>
+          </div>
+  
+          <div className="md:col-span-2">
+            <h2 className="text-xl font-bold mb-4">Catalogue des créateurs</h2>
+  
+            {chargement ? (
+              <p className="text-sm text-gray-500">Chargement du catalogue...</p>
+            ) : produits.length === 0 ? (
+              <div className="bg-white border border-dashed border-gray-300 rounded-xl p-10 text-center text-gray-500">
+                <p className="font-semibold text-gray-700">Aucun produit publié pour le moment</p>
+                <p className="text-xs mt-1">Utilisez le formulaire à gauche pour publier votre première création avec photo !</p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-4">
+                {produits.map((item) => (
+                  <div key={item.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col justify-between">
+                    <div>
+                      {item.image && (
+                        <img src={item.image} alt={item.nom} className="w-full h-44 object-cover" />
+                      )}
+                      <div className="p-4 pb-0">
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-[11px] uppercase tracking-wider bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-semibold">
+                            {item.categorie}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                setProduitEnDirect(item.id);
+                                setEnLive(true);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              className="text-[11px] text-red-600 font-bold hover:underline"
+                            >
+                              ▶ Live
+                            </button>
+                            <button
+                              onClick={() => supprimerProduit(item.id)}
+                              className="text-[11px] text-gray-400 hover:text-red-600 font-semibold"
+                            >
+                              ✕ Supprimer
+                            </button>
+                          </div>
                         </div>
+                        <h3 className="font-bold text-lg mt-2">{item.nom}</h3>
+                        <p className="text-xs text-gray-500">Par <span className="font-medium text-gray-800">{item.createur}</span></p>
                       </div>
-                      <h3 className="font-bold text-lg mt-2">{item.nom}</h3>
-                      <p className="text-xs text-gray-500">Par <span className="font-medium text-gray-800">{item.createur}</span></p>
+                    </div>
+                    <div className="p-4 pt-3 mt-3 border-t flex justify-between items-center">
+                      <span className="text-lg font-extrabold">{item.prix} €</span>
+                      <button
+                        onClick={() =>
+                          alert(
+                            `Simulation d'achat : ${item.nom} (${item.prix}€)\n\nPart créateur : ${(item.prix * 0.93).toFixed(2)}€\nVotre commission (5%) : ${(item.prix * 0.05).toFixed(2)}€`
+                          )
+                        }
+                        className="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-emerald-700"
+                      >
+                        Acheter
+                      </button>
                     </div>
                   </div>
-                  <div className="p-4 pt-3 mt-3 border-t flex justify-between items-center">
-                    <span className="text-lg font-extrabold">{item.prix} €</span>
-                    <button
-                      onClick={() =>
-                        alert(
-                          `Simulation d'achat : ${item.nom} (${item.prix}€)\n\nPart créateur : ${(item.prix * 0.93).toFixed(2)}€\nVotre commission (5%) : ${(item.prix * 0.05).toFixed(2)}€`
-                        )
-                      }
-                      className="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-emerald-700"
-                    >
-                      Acheter
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
-    </div>
-  );
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+    );
+  }
+   
+
 
 
