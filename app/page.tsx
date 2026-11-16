@@ -123,7 +123,9 @@ export default function Home() {
         setFichierPhoto(null);
         setImagePreview(null);
       } else {
-        alert("Vérifiez que votre clé SUPABASE_KEY est bien collée à la ligne 5 !");
+        const errText = await saveRes.text();
+        alert(`Erreur Supabase (${saveRes.status}) : ${errText}`);
+
       }
     } catch (err) {
       alert("Erreur lors de la publication.");
