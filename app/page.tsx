@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 
-const SUPABASE_URL = "lbfiefjiwbnjyeevbbgt"; 
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxiZmllZmppd2JuanllZXZiYmd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4Mzc2OTEsImV4cCI6MjExMDQxMzY5MX0.qnhxy074NVHqSUDF4UGx1U__mrzRZ8GYy_5n4c8cvVg";
+const SUPABASE_URL = "https://supabase.co";
+const SUPABASE_KEY = "sb_publishable_DmL4w5261IAmpabfQcZV1Q_GsaeAc7P";
+
 
 interface Produit {
   id: number;
