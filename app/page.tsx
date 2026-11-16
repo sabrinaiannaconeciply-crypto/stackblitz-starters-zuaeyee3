@@ -82,26 +82,32 @@ export default function Home() {
 
     try {
       if (fichierPhoto) {
-        const nomFichier = `${Date.now()}-${fichierPhoto.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
+        const nomFichier = `photo_${Date.now()}.jpg`;
         const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/photos/${nomFichier}`, {
           method: "POST",
           headers: {
             apikey: SUPABASE_KEY,
             Authorization: `Bearer ${SUPABASE_KEY}`,
-            "Content-Type": fichierPhoto.type,
+            "Content-Type": fichierPhoto.type || "image/jpeg",
           },
           body: fichierPhoto,
         });
-
         if (uploadRes.ok) {
           urlImageFinale = `${SUPABASE_URL}/storage/v1/object/public/photos/${nomFichier}`;
+        } else {
+          const errUpload = await uploadRes.text();
+          alert(`Erreur envoi photo (${uploadRes.status}) : ${errUpload}`);
+          setEnvoiEnCours(false);
+          return;
         }
       }
 
       const saveRes = await fetch(`${SUPABASE_URL}/rest/v1/produits`, {
         method: "POST",
         headers: {
-          ...headersSupabase,
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": "application/json",
           Prefer: "return=representation",
         },
         body: JSON.stringify({
@@ -114,23 +120,26 @@ export default function Home() {
       });
 
       if (saveRes.ok) {
-        const [nouveau] = await saveRes.json();
-        setProduits([nouveau, ...produits]);
-        setProduitEnDirect(nouveau.id);
-        setEnLive(true);
+        const [cree] = await saveRes.json();
+        await chargerProduits();
+        if (cree) {
+          setProduitEnDirect(cree.id);
+          setEnLive(true);
+        }
         setNom("");
         setPrix("");
         setFichierPhoto(null);
         setImagePreview(null);
       } else {
         const errText = await saveRes.text();
-        alert(`Erreur Supabase (${saveRes.status}) : ${errText}`);
-
+        alert(`Erreur base de données (${saveRes.status}) : ${errText}`);
       }
     } catch (err) {
-      alert("Erreur lors de la publication.");
+      alert(`Erreur connexion : ${String(err)}`);
     } finally {
       setEnvoiEnCours(false);
+    }
+
     }
   };
 
@@ -415,5 +424,5 @@ export default function Home() {
       </main>
     </div>
   );
-}
+
 
