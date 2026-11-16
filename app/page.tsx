@@ -1,5 +1,8 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+const SUPABASE_URL = "https://supabase.co";
+const SUPABASE_KEY = "sb_publishable_DmL4wS20lIAnpabfQcZVlQ_GsaeAc7P";
 
 interface Produit {
   id: number;
@@ -8,16 +11,18 @@ interface Produit {
   prix: number;
   categorie: string;
   image: string;
-  tailles: string[];
 }
 
 export default function Home() {
   const [produits, setProduits] = useState<Produit[]>([]);
+  const [chargement, setChargement] = useState(true);
+  const [envoiEnCours, setEnvoiEnCours] = useState(false);
 
   const [nom, setNom] = useState("");
   const [createur, setCreateur] = useState("");
   const [prix, setPrix] = useState("");
   const [categorie, setCategorie] = useState("Mode");
+  const [fichierPhoto, setFichierPhoto] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const [enLive, setEnLive] = useState(false);
@@ -25,39 +30,112 @@ export default function Home() {
   const [produitEnDirect, setProduitEnDirect] = useState<number | null>(null);
   const [tailleChoisie, setTailleChoisie] = useState("M");
 
-  const gererPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const url = URL.createObjectURL(files.item(0)!);
-      setImagePreview(url);
+  const headersSupabase = {
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${SUPABASE_KEY}`,
+    "Content-Type": "application/json",
+  };
+
+  const chargerProduits = async () => {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/produits?select=*&order=created_at.desc`, {
+        headers: headersSupabase,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProduits(data);
+        if (data.length > 0 && !produitEnDirect) {
+          setProduitEnDirect(data[0].id);
+        }
+      }
+    } catch (err) {
+      console.error("Erreur chargement :", err);
+    } finally {
+      setChargement(false);
     }
   };
 
-  const ajouterProduit = (e: React.FormEvent) => {
+  useEffect(() => {
+    chargerProduits();
+  }, []);
+
+  const gererPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files.item(0)!;
+      setFichierPhoto(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const ajouterProduit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nom || !createur || !prix) return;
     if (produits.length >= 15) {
       alert("Limite gratuite atteinte (15 produits max) ! Passez à l'offre Pro à 10€/mois.");
       return;
     }
-    const nouveau: Produit = {
-      id: Date.now(),
-      nom,
-      createur,
-      prix: Number(prix),
-      categorie,
-      image: imagePreview || "",
-      tailles: categorie === "Mode" ? ["S", "M", "L", "XL"] : ["Unique"],
-    };
-    setProduits([nouveau, ...produits]);
-    setProduitEnDirect(nouveau.id);
-    setEnLive(true);
-    setNom("");
-    setPrix("");
-    setImagePreview(null);
+
+    setEnvoiEnCours(true);
+    let urlImageFinale = "";
+
+    try {
+      if (fichierPhoto) {
+        const nomFichier = `${Date.now()}-${fichierPhoto.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
+        const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/photos/${nomFichier}`, {
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": fichierPhoto.type,
+          },
+          body: fichierPhoto,
+        });
+
+        if (uploadRes.ok) {
+          urlImageFinale = `${SUPABASE_URL}/storage/v1/object/public/photos/${nomFichier}`;
+        }
+      }
+
+      const saveRes = await fetch(`${SUPABASE_URL}/rest/v1/produits`, {
+        method: "POST",
+        headers: {
+          ...headersSupabase,
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify({
+          nom,
+          createur,
+          prix: Number(prix),
+          categorie,
+          image: urlImageFinale,
+        }),
+      });
+
+      if (saveRes.ok) {
+        const [nouveau] = await saveRes.json();
+        setProduits([nouveau, ...produits]);
+        setProduitEnDirect(nouveau.id);
+        setEnLive(true);
+        setNom("");
+        setPrix("");
+        setFichierPhoto(null);
+        setImagePreview(null);
+      } else {
+        alert("Vérifiez que votre clé SUPABASE_KEY est bien collée à la ligne 5 !");
+      }
+    } catch (err) {
+      alert("Erreur lors de la publication.");
+    } finally {
+      setEnvoiEnCours(false);
+    }
   };
 
-  const supprimerProduit = (id: number) => {
+  const supprimerProduit = async (id: number) => {
+    await fetch(`${SUPABASE_URL}/rest/v1/produits?id=eq.${id}`, {
+      method: "DELETE",
+      headers: headersSupabase,
+    });
     const misAJour = produits.filter((p) => p.id !== id);
     setProduits(misAJour);
     if (produitEnDirect === id) {
@@ -66,6 +144,7 @@ export default function Home() {
   };
 
   const articleLive = produits.find((p) => p.id === produitEnDirect) || produits[0];
+  const taillesArticle = articleLive?.categorie === "Mode" ? ["S", "M", "L", "XL"] : ["Unique"];
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
@@ -148,7 +227,7 @@ export default function Home() {
               <div className="mb-4">
                 <p className="text-xs text-gray-400 mb-1.5">Choisissez votre taille :</p>
                 <div className="flex gap-2">
-                  {articleLive.tailles.map((t) => (
+                  {taillesArticle.map((t) => (
                     <button
                       key={t}
                       type="button"
@@ -170,7 +249,10 @@ export default function Home() {
                   <span className="text-xs text-gray-400 block">Prix Live</span>
                   <span className="text-2xl font-extrabold text-white">{articleLive.prix} €</span>
                 </div>
-                <button
+               
+
+
+<button
                   onClick={() =>
                     alert(
                       `Commande Live enregistrée !\nArticle : ${articleLive.nom} (Taille : ${tailleChoisie})\nTotal : ${articleLive.prix}€\n\nVotre commission (5%) : ${(articleLive.prix * 0.05).toFixed(2)}€`
@@ -240,7 +322,7 @@ export default function Home() {
                 />
               </div>
               <div>
-              <label className="block text-xs font-semibold mb-1">Catégorie</label>
+                <label className="block text-xs font-semibold mb-1">Catégorie</label>
                 <select
                   value={categorie}
                   onChange={(e) => setCategorie(e.target.value)}
@@ -255,9 +337,10 @@ export default function Home() {
             </div>
             <button
               type="submit"
-              className="w-full bg-black text-white font-semibold py-2.5 rounded-lg hover:bg-gray-800 transition text-sm"
+              disabled={envoiEnCours}
+              className="w-full bg-black text-white font-semibold py-2.5 rounded-lg hover:bg-gray-800 transition text-sm disabled:opacity-50"
             >
-              + Publier avec photo
+              {envoiEnCours ? "Enregistrement en cours..." : "+ Publier avec photo"}
             </button>
           </form>
         </div>
@@ -265,7 +348,9 @@ export default function Home() {
         <div className="md:col-span-2">
           <h2 className="text-xl font-bold mb-4">Catalogue des créateurs</h2>
 
-          {produits.length === 0 ? (
+          {chargement ? (
+            <p className="text-sm text-gray-500">Chargement du catalogue...</p>
+          ) : produits.length === 0 ? (
             <div className="bg-white border border-dashed border-gray-300 rounded-xl p-10 text-center text-gray-500">
               <p className="font-semibold text-gray-700">Aucun produit publié pour le moment</p>
               <p className="text-xs mt-1">Utilisez le formulaire à gauche pour publier votre première création avec photo !</p>
