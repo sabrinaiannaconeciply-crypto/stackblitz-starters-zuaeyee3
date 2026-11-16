@@ -351,4 +351,35 @@ export default function Home() {
                           </button>
                           <button
                             onClick={() => supprimerProduit(item.id)}
- 
+                              className="text-[11px] text-gray-400 hover:text-red-600 font-semibold"
+                              >
+                                ✕ Supprimer
+                              </button>
+                            </div>
+                          </div>
+                          <h3 className="font-bold text-lg mt-2">{item.nom}</h3>
+                          <p className="text-xs text-gray-500">Par <span className="font-medium text-gray-800">{item.createur}</span></p>
+                        </div>
+                      </div>
+                      <div className="p-4 pt-3 mt-3 border-t flex justify-between items-center">
+                        <span className="text-lg font-extrabold">{item.prix} €</span>
+                        <button
+                          onClick={() =>
+                            alert(
+                              `Simulation d'achat : ${item.nom} (${item.prix}€)\n\nPart créateur : ${(item.prix * 0.93).toFixed(2)}€\nVotre commission (5%) : ${(item.prix * 0.05).toFixed(2)}€`
+                            )
+                          }
+                          className="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-lg hover:bg-emerald-700"
+                        >
+                          Acheter
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </main>
+        </div>
+      );
+    }
