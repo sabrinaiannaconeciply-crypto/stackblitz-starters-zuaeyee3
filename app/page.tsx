@@ -5,6 +5,7 @@ const SUPABASE_URL = "https://supabase.co";
 const SUPABASE_KEY = "sb_publishable_DmL4w5261IAmpabfQcZV1Q_GsaeAc7P";
 
 
+
 interface Produit {
   id: number;
   nom: string;
