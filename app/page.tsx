@@ -1,13 +1,13 @@
 "use client";
 import React, { useState, useEffect } from "react";
 
-const SUPABASE_URL = "https://supabase.co";
+const SUPABASE_URL = "https://lbfiefjlwbnjyeevbbgt.supabase.co";
 const SUPABASE_KEY = "sb_publishable_DmL4w5261IAmpabfQcZV1Q_GsaeAc7P";
 
 interface Produit {
   id: number;
   nom: string;
-  createur: string;
+  createur: string
   prix: number;
   categorie: string;
   image?: string;
