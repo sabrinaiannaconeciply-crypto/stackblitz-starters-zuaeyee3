@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 
 const SUPABASE_URL = "https://fbfnefjwibnjyeevbkgt.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzZDxBhYmFzZSIsInJlZiI6ImZiZm5lZmp3aWJuanllZXZia2d0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4Mzc0OTEsImV4cCI6MjExMDQxMzQ5MX0.qnhxye74NVHqSUDf4uG1U_ar8Rz86Y_Sn8ec8vg";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxiZmllZmppd2JuanllZXZiYmd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4Mzc2OTEsImV4cCI6MjExMDQxMzY5MX0.qnhxy074NVHqSUDF4UGx1U__mrzRZ8GYy_5n4c8cvVg";
 
 
 interface Produit {
